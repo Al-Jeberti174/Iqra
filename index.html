@@ -1,54 +1,221 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Iqra</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #0f172a, #111827);
+      color: white;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(8px);
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 42px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 18px;
+    }
+
+    .card {
+      background: white;
+      color: #111827;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .primary {
+      background: #111827;
+      color: white;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .mic {
+      background: #2563eb;
+      color: white;
+    }
+
+    .section {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 18px;
+      margin-top: 14px;
+    }
+
+    .label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .verse-ref {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .verse-text {
+      font-size: 20px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .output {
+      min-height: 28px;
+      font-size: 18px;
+      margin: 0;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 34px;
+      }
+
+      .verse-ref {
+        font-size: 20px;
+      }
+
+      .verse-text,
+      .output {
+        font-size: 17px;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <div class="hero">
+      <h1>Iqra</h1>
+      <p class="subtitle">A simple Quran hifdh tester with random ayah and voice input.</p>
+    </div>
 
-<h1>Iqra</h1>
+    <div class="card">
+      <div class="buttons">
+        <button class="primary" onclick="randomVerse()">Random Ayah</button>
+        <button class="secondary" onclick="toggleText()">Show / Hide Text</button>
+        <button class="mic" onclick="startListening()">🎤 Start Listening</button>
+      </div>
 
-<button onclick="randomVerse()">Random Ayah</button> <button onclick="toggleText()">Show/Hide Text</button>
+      <div class="section">
+        <div class="label">Reference</div>
+        <p id="verse" class="verse-ref">Click “Random Ayah” to begin</p>
+      </div>
 
-<p id="verse"></p>
-<p id="text" style="display:none;"></p>
+      <div class="section">
+        <div class="label">Verse Text</div>
+        <p id="text" class="verse-text" style="display:none;"></p>
+      </div>
 
-<button onclick="startListening()">🎤 Start</button>
+      <div class="section">
+        <div class="label">Voice Output</div>
+        <p id="output" class="output">Your recitation will appear here.</p>
+      </div>
+    </div>
+  </div>
 
-<p id="output"></p>
+  <script>
+    const verses = [
+      { ref: "Al-Fatiha 1", text: "Bismillahir rahmanir rahim" },
+      { ref: "Al-Fatiha 2", text: "Alhamdu lillahi rabbil alamin" },
+      { ref: "Al-Ikhlas 1", text: "Qul huwa Allahu ahad" }
+    ];
 
-<script>
-const verses = [
-  {ref:"Al-Fatiha 1", text:"Bismillahir rahmanir rahim"},
-  {ref:"Al-Fatiha 2", text:"Alhamdu lillahi rabbil alamin"},
-  {ref:"Al-Ikhlas 1", text:"Qul huwa Allahu ahad"}
-];
+    let current;
 
-let current;
+    function randomVerse() {
+      current = verses[Math.floor(Math.random() * verses.length)];
+      document.getElementById("verse").innerText = current.ref;
+      document.getElementById("text").innerText = current.text;
+    }
 
-function randomVerse(){
-  current = verses[Math.floor(Math.random()*verses.length)];
-  document.getElementById("verse").innerText = current.ref;
-  document.getElementById("text").innerText = current.text;
-}
+    function toggleText() {
+      const el = document.getElementById("text");
+      el.style.display = el.style.display === "none" ? "block" : "none";
+    }
 
-function toggleText(){
-  const el = document.getElementById("text");
-  el.style.display = el.style.display === "none" ? "block" : "none";
-}
+    function startListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function startListening(){
-  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  rec.lang = "en-US";
+      if (!SpeechRecognition) {
+        document.getElementById("output").innerText =
+          "Speech recognition is not supported in this browser.";
+        return;
+      }
 
-  rec.onresult = function(e){
-    let spoken = e.results[0][0].transcript;
-    document.getElementById("output").innerText = "You said: " + spoken;
-  }
+      const rec = new SpeechRecognition();
+      rec.lang = "en-US";
 
-  rec.start();
-}
-</script>
+      rec.onresult = function (e) {
+        const spoken = e.results[0][0].transcript;
+        document.getElementById("output").innerText = "You said: " + spoken;
+      };
 
+      rec.onerror = function () {
+        document.getElementById("output").innerText =
+          "Something went wrong with the microphone.";
+      };
+
+      rec.start();
+    }
+  </script>
 </body>
 </html>
