@@ -19,7 +19,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 950px;
       margin: 0 auto;
     }
 
@@ -109,10 +109,26 @@
       margin: 0;
     }
 
-    .verse-text {
-      font-size: 20px;
-      line-height: 1.7;
+    .arabic {
+      font-size: 34px;
+      line-height: 2;
+      text-align: right;
+      direction: rtl;
       margin: 0;
+      font-weight: 600;
+    }
+
+    .transliteration {
+      font-size: 18px;
+      color: #334155;
+      margin: 14px 0 0 0;
+      font-style: italic;
+    }
+
+    .translation {
+      font-size: 17px;
+      color: #475569;
+      margin: 10px 0 0 0;
     }
 
     .output {
@@ -130,9 +146,14 @@
         font-size: 20px;
       }
 
-      .verse-text,
+      .arabic {
+        font-size: 26px;
+      }
+
+      .transliteration,
+      .translation,
       .output {
-        font-size: 17px;
+        font-size: 16px;
       }
 
       button {
@@ -145,7 +166,7 @@
   <div class="container">
     <div class="hero">
       <h1>Iqra</h1>
-      <p class="subtitle">A simple Quran hifdh tester with random ayah and voice input.</p>
+      <p class="subtitle">A Quran hifdh tester with random ayah and voice input.</p>
     </div>
 
     <div class="card">
@@ -161,8 +182,12 @@
       </div>
 
       <div class="section">
-        <div class="label">Verse Text</div>
-        <p id="text" class="verse-text" style="display:none;"></p>
+        <div class="label">Ayah</div>
+        <div id="ayahBlock" style="display:none;">
+          <p id="arabic" class="arabic"></p>
+          <p id="translit" class="transliteration"></p>
+          <p id="translation" class="translation"></p>
+        </div>
       </div>
 
       <div class="section">
@@ -174,9 +199,24 @@
 
   <script>
     const verses = [
-      { ref: "Al-Fatiha 1", text: "Bismillahir rahmanir rahim" },
-      { ref: "Al-Fatiha 2", text: "Alhamdu lillahi rabbil alamin" },
-      { ref: "Al-Ikhlas 1", text: "Qul huwa Allahu ahad" }
+      {
+        ref: "Al-Fatiha 1",
+        arabic: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+        translit: "Bismillahir rahmanir rahim",
+        translation: "In the name of Allah, the Most Compassionate, the Most Merciful."
+      },
+      {
+        ref: "Al-Fatiha 2",
+        arabic: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
+        translit: "Alhamdu lillahi rabbil alamin",
+        translation: "All praise is for Allah, Lord of all worlds."
+      },
+      {
+        ref: "Al-Ikhlas 1",
+        arabic: "قُلْ هُوَ اللَّهُ أَحَدٌ",
+        translit: "Qul huwa Allahu ahad",
+        translation: "Say, He is Allah, the One."
+      }
     ];
 
     let current;
@@ -184,12 +224,14 @@
     function randomVerse() {
       current = verses[Math.floor(Math.random() * verses.length)];
       document.getElementById("verse").innerText = current.ref;
-      document.getElementById("text").innerText = current.text;
+      document.getElementById("arabic").innerText = current.arabic;
+      document.getElementById("translit").innerText = current.translit;
+      document.getElementById("translation").innerText = current.translation;
     }
 
     function toggleText() {
-      const el = document.getElementById("text");
-      el.style.display = el.style.display === "none" ? "block" : "none";
+      const block = document.getElementById("ayahBlock");
+      block.style.display = block.style.display === "none" ? "block" : "none";
     }
 
     function startListening() {
@@ -202,7 +244,7 @@
       }
 
       const rec = new SpeechRecognition();
-      rec.lang = "en-US";
+      rec.lang = "ar-SA";
 
       rec.onresult = function (e) {
         const spoken = e.results[0][0].transcript;
