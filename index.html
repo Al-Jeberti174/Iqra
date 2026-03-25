@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Iqra</title>
+</head>
+<body>
+
+<h1>Iqra</h1>
+
+<button onclick="randomVerse()">Random Ayah</button> <button onclick="toggleText()">Show/Hide Text</button>
+
+<p id="verse"></p>
+<p id="text" style="display:none;"></p>
+
+<button onclick="startListening()">🎤 Start</button>
+
+<p id="output"></p>
+
+<script>
+const verses = [
+  {ref:"Al-Fatiha 1", text:"Bismillahir rahmanir rahim"},
+  {ref:"Al-Fatiha 2", text:"Alhamdu lillahi rabbil alamin"},
+  {ref:"Al-Ikhlas 1", text:"Qul huwa Allahu ahad"}
+];
+
+let current;
+
+function randomVerse(){
+  current = verses[Math.floor(Math.random()*verses.length)];
+  document.getElementById("verse").innerText = current.ref;
+  document.getElementById("text").innerText = current.text;
+}
+
+function toggleText(){
+  const el = document.getElementById("text");
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+function startListening(){
+  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  rec.lang = "en-US";
+
+  rec.onresult = function(e){
+    let spoken = e.results[0][0].transcript;
+    document.getElementById("output").innerText = "You said: " + spoken;
+  }
+
+  rec.start();
+}
+</script>
+
+</body>
+</html>
