@@ -19,7 +19,7 @@
     }
 
     .container {
-      max-width: 950px;
+      max-width: 980px;
       margin: 0 auto;
     }
 
@@ -41,6 +41,7 @@
       margin: 0;
       color: #cbd5e1;
       font-size: 18px;
+      line-height: 1.5;
     }
 
     .card {
@@ -72,6 +73,12 @@
       opacity: 0.95;
     }
 
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .primary {
       background: #111827;
       color: white;
@@ -84,6 +91,11 @@
 
     .mic {
       background: #2563eb;
+      color: white;
+    }
+
+    .danger {
+      background: #dc2626;
       color: white;
     }
 
@@ -118,23 +130,65 @@
       font-weight: 600;
     }
 
-    .transliteration {
-      font-size: 18px;
-      color: #334155;
-      margin: 14px 0 0 0;
-      font-style: italic;
-    }
-
-    .translation {
-      font-size: 17px;
+    .helper {
       color: #475569;
       margin: 10px 0 0 0;
+      line-height: 1.6;
     }
 
-    .output {
-      min-height: 28px;
-      font-size: 18px;
+    .status {
+      font-size: 17px;
       margin: 0;
+      font-weight: 600;
+    }
+
+    .live-box {
+      min-height: 88px;
+    }
+
+    .live-arabic {
+      font-size: 30px;
+      line-height: 2;
+      text-align: right;
+      direction: rtl;
+      margin: 0;
+      font-weight: 600;
+      word-wrap: break-word;
+    }
+
+    .word {
+      display: inline-block;
+      margin-left: 6px;
+      margin-right: 6px;
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+
+    .correct {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .wrong {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .pending {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .plain {
+      background: transparent;
+      color: #111827;
+    }
+
+    .small {
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 8px;
+      line-height: 1.5;
     }
 
     @media (max-width: 640px) {
@@ -150,10 +204,8 @@
         font-size: 26px;
       }
 
-      .transliteration,
-      .translation,
-      .output {
-        font-size: 16px;
+      .live-arabic {
+        font-size: 24px;
       }
 
       button {
@@ -166,97 +218,363 @@
   <div class="container">
     <div class="hero">
       <h1>Iqra</h1>
-      <p class="subtitle">A Quran hifdh tester with random ayah and voice input.</p>
+      <p class="subtitle">
+        Random start verse from Juz Amma. Recite from the shown ayah and continue.
+        Live text appears as you recite. Wrong words are marked in red and trigger a warning sound.
+      </p>
     </div>
 
     <div class="card">
       <div class="buttons">
-        <button class="primary" onclick="randomVerse()">Random Ayah</button>
-        <button class="secondary" onclick="toggleText()">Show / Hide Text</button>
-        <button class="mic" onclick="startListening()">🎤 Start Listening</button>
+        <button class="primary" onclick="pickRandomPrompt()">Random Start Verse</button>
+        <button class="mic" onclick="startListening()" id="startBtn">🎤 Start Listening</button>
+        <button class="danger" onclick="stopListening()" id="stopBtn" disabled>Stop</button>
+        <button class="secondary" onclick="toggleExpected()">Show / Hide Expected Continuation</button>
       </div>
 
       <div class="section">
-        <div class="label">Reference</div>
-        <p id="verse" class="verse-ref">Click “Random Ayah” to begin</p>
+        <div class="label">Start Verse</div>
+        <p id="promptRef" class="verse-ref">Click “Random Start Verse” to begin</p>
+        <p id="promptArabic" class="arabic"></p>
+        <p class="helper">Recite this ayah and continue for 2 more ayahs.</p>
       </div>
 
       <div class="section">
-        <div class="label">Ayah</div>
-        <div id="ayahBlock" style="display:none;">
-          <p id="arabic" class="arabic"></p>
-          <p id="translit" class="transliteration"></p>
-          <p id="translation" class="translation"></p>
+        <div class="label">Expected Continuation</div>
+        <div id="expectedBlock" style="display:none;">
+          <p id="expectedArabic" class="arabic"></p>
         </div>
       </div>
 
       <div class="section">
-        <div class="label">Voice Output</div>
-        <p id="output" class="output">Your recitation will appear here.</p>
+        <div class="label">Status</div>
+        <p id="status" class="status">Waiting to start.</p>
+      </div>
+
+      <div class="section live-box">
+        <div class="label">Live Recitation</div>
+        <div id="liveOutput" class="live-arabic">Your recitation will appear here.</div>
+        <div class="small" id="rawTranscript"></div>
       </div>
     </div>
   </div>
 
   <script>
-    const verses = [
+    // Small starter dataset from Juz Amma
+    const juzAmma = [
       {
-        ref: "Al-Fatiha 1",
-        arabic: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-        translit: "Bismillahir rahmanir rahim",
-        translation: "In the name of Allah, the Most Compassionate, the Most Merciful."
+        surah: "An-Naba",
+        ayah: 1,
+        arabic: "عَمَّ يَتَسَاءَلُونَ"
       },
       {
-        ref: "Al-Fatiha 2",
-        arabic: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
-        translit: "Alhamdu lillahi rabbil alamin",
-        translation: "All praise is for Allah, Lord of all worlds."
+        surah: "An-Naba",
+        ayah: 2,
+        arabic: "عَنِ النَّبَإِ الْعَظِيمِ"
       },
       {
-        ref: "Al-Ikhlas 1",
-        arabic: "قُلْ هُوَ اللَّهُ أَحَدٌ",
-        translit: "Qul huwa Allahu ahad",
-        translation: "Say, He is Allah, the One."
+        surah: "An-Naba",
+        ayah: 3,
+        arabic: "الَّذِي هُمْ فِيهِ مُخْتَلِفُونَ"
+      },
+      {
+        surah: "An-Naba",
+        ayah: 4,
+        arabic: "كَلَّا سَيَعْلَمُونَ"
+      },
+      {
+        surah: "An-Naba",
+        ayah: 5,
+        arabic: "ثُمَّ كَلَّا سَيَعْلَمُونَ"
+      },
+      {
+        surah: "An-Naziat",
+        ayah: 1,
+        arabic: "وَالنَّازِعَاتِ غَرْقًا"
+      },
+      {
+        surah: "An-Naziat",
+        ayah: 2,
+        arabic: "وَالنَّاشِطَاتِ نَشْطًا"
+      },
+      {
+        surah: "An-Naziat",
+        ayah: 3,
+        arabic: "وَالسَّابِحَاتِ سَبْحًا"
+      },
+      {
+        surah: "Abasa",
+        ayah: 1,
+        arabic: "عَبَسَ وَتَوَلَّىٰ"
+      },
+      {
+        surah: "Abasa",
+        ayah: 2,
+        arabic: "أَنْ جَاءَهُ الْأَعْمَىٰ"
+      },
+      {
+        surah: "Abasa",
+        ayah: 3,
+        arabic: "وَمَا يُدْرِيكَ لَعَلَّهُ يَزَّكَّىٰ"
+      },
+      {
+        surah: "At-Takwir",
+        ayah: 1,
+        arabic: "إِذَا الشَّمْسُ كُوِّرَتْ"
+      },
+      {
+        surah: "At-Takwir",
+        ayah: 2,
+        arabic: "وَإِذَا النُّجُومُ انْكَدَرَتْ"
+      },
+      {
+        surah: "At-Takwir",
+        ayah: 3,
+        arabic: "وَإِذَا الْجِبَالُ سُيِّرَتْ"
+      },
+      {
+        surah: "Al-Ikhlas",
+        ayah: 1,
+        arabic: "قُلْ هُوَ اللَّهُ أَحَدٌ"
+      },
+      {
+        surah: "Al-Ikhlas",
+        ayah: 2,
+        arabic: "اللَّهُ الصَّمَدُ"
+      },
+      {
+        surah: "Al-Ikhlas",
+        ayah: 3,
+        arabic: "لَمْ يَلِدْ وَلَمْ يُولَدْ"
+      },
+      {
+        surah: "Al-Ikhlas",
+        ayah: 4,
+        arabic: "وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ"
+      },
+      {
+        surah: "Al-Falaq",
+        ayah: 1,
+        arabic: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ"
+      },
+      {
+        surah: "Al-Falaq",
+        ayah: 2,
+        arabic: "مِنْ شَرِّ مَا خَلَقَ"
+      },
+      {
+        surah: "Al-Falaq",
+        ayah: 3,
+        arabic: "وَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ"
+      },
+      {
+        surah: "An-Nas",
+        ayah: 1,
+        arabic: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ"
+      },
+      {
+        surah: "An-Nas",
+        ayah: 2,
+        arabic: "مَلِكِ النَّاسِ"
+      },
+      {
+        surah: "An-Nas",
+        ayah: 3,
+        arabic: "إِلَٰهِ النَّاسِ"
       }
     ];
 
-    let current;
+    let currentPromptIndex = null;
+    let expectedSequence = [];
+    let recognition = null;
+    let lastBeepAt = 0;
 
-    function randomVerse() {
-      current = verses[Math.floor(Math.random() * verses.length)];
-      document.getElementById("verse").innerText = current.ref;
-      document.getElementById("arabic").innerText = current.arabic;
-      document.getElementById("translit").innerText = current.translit;
-      document.getElementById("translation").innerText = current.translation;
+    function normalizeArabic(text) {
+      return text
+        .replace(/[\u064B-\u065F\u0670]/g, "") // harakat etc
+        .replace(/ٱ/g, "ا")
+        .replace(/ى/g, "ي")
+        .replace(/ة/g, "ه")
+        .replace(/[^\u0621-\u064A\s]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
     }
 
-    function toggleText() {
-      const block = document.getElementById("ayahBlock");
+    function splitWords(text) {
+      return normalizeArabic(text).split(" ").filter(Boolean);
+    }
+
+    function sameSurah(a, b) {
+      return a && b && a.surah === b.surah;
+    }
+
+    function buildExpectedSequence(startIndex, countAhead = 2) {
+      const seq = [];
+      const start = juzAmma[startIndex];
+      seq.push(start);
+
+      let idx = startIndex + 1;
+      while (idx < juzAmma.length && seq.length < countAhead + 1) {
+        if (!sameSurah(start, juzAmma[idx])) break;
+        seq.push(juzAmma[idx]);
+        idx++;
+      }
+
+      return seq;
+    }
+
+    function pickRandomPrompt() {
+      const validIndices = [];
+
+      for (let i = 0; i < juzAmma.length; i++) {
+        const seq = buildExpectedSequence(i, 2);
+        if (seq.length >= 2) {
+          validIndices.push(i);
+        }
+      }
+
+      const randomIndex = validIndices[Math.floor(Math.random() * validIndices.length)];
+      currentPromptIndex = randomIndex;
+      expectedSequence = buildExpectedSequence(randomIndex, 2);
+
+      const prompt = expectedSequence[0];
+      document.getElementById("promptRef").innerText = `${prompt.surah} ${prompt.ayah}`;
+      document.getElementById("promptArabic").innerText = prompt.arabic;
+      document.getElementById("expectedArabic").innerText = expectedSequence.map(v => v.arabic).join("  ۝  ");
+      document.getElementById("liveOutput").innerHTML = "Your recitation will appear here.";
+      document.getElementById("rawTranscript").innerText = "";
+      document.getElementById("status").innerText = "Start verse selected. Press Start Listening.";
+    }
+
+    function toggleExpected() {
+      const block = document.getElementById("expectedBlock");
       block.style.display = block.style.display === "none" ? "block" : "none";
     }
 
-    function startListening() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    function getExpectedWords() {
+      return expectedSequence.flatMap(v => splitWords(v.arabic));
+    }
 
-      if (!SpeechRecognition) {
-        document.getElementById("output").innerText =
-          "Speech recognition is not supported in this browser.";
+    function beepError() {
+      const now = Date.now();
+      if (now - lastBeepAt < 700) return;
+      lastBeepAt = now;
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = 440;
+      gainNode.gain.value = 0.08;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.12);
+    }
+
+    function renderComparison(spokenText) {
+      const expectedWords = getExpectedWords();
+      const spokenWords = splitWords(spokenText);
+
+      if (!spokenWords.length) {
+        document.getElementById("liveOutput").innerHTML = "Your recitation will appear here.";
         return;
       }
 
-      const rec = new SpeechRecognition();
-      rec.lang = "ar-SA";
+      let html = "";
+      let foundWrong = false;
 
-      rec.onresult = function (e) {
-        const spoken = e.results[0][0].transcript;
-        document.getElementById("output").innerText = "You said: " + spoken;
+      for (let i = 0; i < spokenWords.length; i++) {
+        const spoken = spokenWords[i];
+        const expected = expectedWords[i];
+
+        if (!expected) {
+          html += `<span class="word wrong">${spoken}</span> `;
+          foundWrong = true;
+          continue;
+        }
+
+        if (spoken === expected) {
+          html += `<span class="word correct">${spoken}</span> `;
+        } else {
+          html += `<span class="word wrong">${spoken}</span> `;
+          foundWrong = true;
+        }
+      }
+
+      document.getElementById("liveOutput").innerHTML = html;
+
+      if (foundWrong) {
+        document.getElementById("status").innerText = "Mistake detected.";
+        beepError();
+      } else {
+        document.getElementById("status").innerText = "Recitation matches so far.";
+      }
+    }
+
+    function startListening() {
+      if (!expectedSequence.length) {
+        document.getElementById("status").innerText = "Pick a random start verse first.";
+        return;
+      }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        document.getElementById("status").innerText = "Speech recognition is not supported in this browser.";
+        return;
+      }
+
+      if (recognition) {
+        recognition.stop();
+        recognition = null;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = "ar-SA";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = function() {
+        document.getElementById("status").innerText = "Listening...";
+        document.getElementById("startBtn").disabled = true;
+        document.getElementById("stopBtn").disabled = false;
       };
 
-      rec.onerror = function () {
-        document.getElementById("output").innerText =
-          "Something went wrong with the microphone.";
+      recognition.onresult = function(event) {
+        let transcript = "";
+
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript + " ";
+        }
+
+        transcript = transcript.trim();
+        document.getElementById("rawTranscript").innerText = "Raw transcript: " + transcript;
+        renderComparison(transcript);
       };
 
-      rec.start();
+      recognition.onerror = function() {
+        document.getElementById("status").innerText = "Microphone or speech recognition error.";
+        document.getElementById("startBtn").disabled = false;
+        document.getElementById("stopBtn").disabled = true;
+      };
+
+      recognition.onend = function() {
+        document.getElementById("status").innerText = "Stopped listening.";
+        document.getElementById("startBtn").disabled = false;
+        document.getElementById("stopBtn").disabled = true;
+      };
+
+      recognition.start();
+    }
+
+    function stopListening() {
+      if (recognition) {
+        recognition.stop();
+      }
     }
   </script>
 </body>
